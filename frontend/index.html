@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Da Nang City Monitor</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f9f9f7;
+      color: #1a1a1a;
+    }
+    h2 { margin-bottom: 1.5rem; font-weight: 500; }
+    .card {
+      background: #fff;
+      border: 0.5px solid #e0e0d8;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 10px;
+    }
+    .digest { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+    .trend-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .trend-pill {
+      padding: 4px 12px;
+      background: #eeedfe;
+      color: #534ab7;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .article { padding: 8px 0; border-bottom: 0.5px solid #eee; }
+    .article:last-child { border: none; }
+    .article a { color: #185fa5; font-size: 14px; text-decoration: none; }
+    .article a:hover { text-decoration: underline; }
+    .article .meta { font-size: 11px; color: #aaa; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <h2>Da Nang City Monitor</h2>
+
+  <div class="card">
+    <div class="label">AI digest — today</div>
+    <div class="digest" id="digest">Loading...</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Trending searches</div>
+    <div class="trend-grid" id="trends">Loading...</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Latest articles</div>
+    <div id="articles">Loading...</div>
+  </div>
+
+  <script>
+    const API = 'https://YOUR-API.railway.app'
+
+    fetch(API + '/digest')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('digest').textContent =
+          d?.summary || 'No digest yet — check back after 7am Vietnam time.'
+      })
+
+    fetch(API + '/trends')
+      .then(r => r.json())
+      .then(rows => {
+        document.getElementById('trends').innerHTML =
+          rows.map(r =>
+            `<span class="trend-pill">${r.keyword} <strong>${r.value}</strong></span>`
+          ).join('')
+      })
+
+    fetch(API + '/articles')
+      .then(r => r.json())
+      .then(rows => {
+        document.getElementById('articles').innerHTML =
+          rows.map(r => `
+            <div class="article">
+              <a href="${r.url}" target="_blank">${r.title}</a>
+              <div class="meta">${r.source} · ${new Date(r.published_at).toLocaleString('vi-VN')}</div>
+            </div>
+          `).join('')
+      })
+  </script>
+</body>
+</html>
