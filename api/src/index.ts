@@ -35,6 +35,10 @@ app.get('/digest', async (_req, res) => {
   res.json(rows[0] ?? null)
 })
 
+app.get('/config', (_req, res) => {
+  res.json({ mapboxToken: process.env.MAPBOX_TOKEN ?? '' })
+})
+
 app.get('/places', async (_req, res) => {
   const { rows } = await pool.query(`
     SELECT name, category, address, rating, user_ratings_total,
