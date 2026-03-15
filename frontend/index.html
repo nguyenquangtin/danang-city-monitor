@@ -354,13 +354,14 @@
       const catColor = { 'Cafe':'#a855f7','Restaurant':'#f97316','Photo Spot':'#22c55e','Bar':'#ef4444','Hotel':'#3b82f6' }
 
       // Static beaches
-      [
+      const beaches = [
         { name:'My Khe Beach',    lng:108.2483, lat:16.0447, desc:"Da Nang's most popular beach" },
         { name:'Non Nuoc Beach',  lng:108.2592, lat:15.9803, desc:'Marble Mountains nearby' },
         { name:'Bac My An Beach', lng:108.2481, lat:16.0334, desc:'Calm waters, resort area' },
         { name:'Lang Co Beach',   lng:108.0978, lat:16.2203, desc:'Scenic lagoon beach' },
         { name:'Nam O Beach',     lng:108.1302, lat:16.1025, desc:'Fishing village beach' },
-      ].forEach(b => {
+      ]
+      beaches.forEach(b => {
         const el = document.createElement('div')
         el.innerHTML = markerHtml('#06b6d4','🏖️')
         new mapboxgl.Marker(el).setLngLat([b.lng, b.lat])
