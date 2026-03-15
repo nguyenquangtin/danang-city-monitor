@@ -35,6 +35,17 @@ app.get('/digest', async (_req, res) => {
   res.json(rows[0] ?? null)
 })
 
+app.get('/places', async (_req, res) => {
+  const { rows } = await pool.query(`
+    SELECT name, category, address, rating, user_ratings_total,
+           photo_url, maps_url, lat, lng
+    FROM places
+    ORDER BY rating DESC, user_ratings_total DESC
+    LIMIT 24
+  `)
+  res.json(rows)
+})
+
 app.get('/youtube', async (_req, res) => {
   const { rows } = await pool.query(`
     SELECT title, url, thumbnail_url, view_count, published_at

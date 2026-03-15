@@ -337,6 +337,96 @@
       100% { background-position: -200% 0; }
     }
 
+    /* ── Places / Hot Spots ── */
+    .places-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .place-card {
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 200ms, transform 200ms;
+    }
+
+    .place-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+    }
+
+    .place-photo {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      background: var(--border);
+    }
+
+    .place-photo-placeholder {
+      width: 100%;
+      aspect-ratio: 4/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 24px;
+    }
+
+    .place-info { padding: 8px; }
+
+    .place-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .place-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .place-rating {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: #fbbf24;
+    }
+
+    .place-cat {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .cat-cafe          { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
+    .cat-restaurant    { background: rgba(249,115,22,0.12); color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }
+    .cat-photo-spot    { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+    .cat-bar           { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .cat-hotel         { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+
     /* ── Responsive ── */
     @media (max-width: 768px) {
       .layout { grid-template-columns: 1fr; }
@@ -394,6 +484,22 @@
 
     <!-- Main -->
     <main>
+
+      <!-- Hot Spots -->
+      <div class="main-section">
+        <div class="section-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Hot Spots — Cafes, Check-ins &amp; Photo Spots
+        </div>
+        <div class="places-grid" id="places">
+          <div class="skeleton" style="height:140px;border-radius:8px"></div>
+          <div class="skeleton" style="height:140px;border-radius:8px"></div>
+          <div class="skeleton" style="height:140px;border-radius:8px"></div>
+          <div class="skeleton" style="height:140px;border-radius:8px"></div>
+          <div class="skeleton" style="height:140px;border-radius:8px"></div>
+          <div class="skeleton" style="height:140px;border-radius:8px"></div>
+        </div>
+      </div>
 
       <!-- YouTube -->
       <div class="main-section">
@@ -468,6 +574,28 @@
                 <span class="trend-val">${r.value}</span>
               </div>`).join('')
           : '<div class="empty">No trend data yet.</div>'
+      })
+
+    // Hot Spots
+    fetch(API + '/places')
+      .then(r => r.json())
+      .then(rows => {
+        const catClass = { 'Cafe': 'cat-cafe', 'Restaurant': 'cat-restaurant', 'Photo Spot': 'cat-photo-spot', 'Bar': 'cat-bar', 'Hotel': 'cat-hotel' }
+        document.getElementById('places').innerHTML = rows.length
+          ? rows.map(p => `
+              <a class="place-card" href="${p.maps_url}" target="_blank" rel="noopener">
+                ${p.photo_url
+                  ? `<img class="place-photo" src="${p.photo_url}" alt="${p.name}" loading="lazy">`
+                  : `<div class="place-photo-placeholder">📍</div>`}
+                <div class="place-info">
+                  <div class="place-name">${p.name}</div>
+                  <div class="place-meta">
+                    ${p.rating ? `<span class="place-rating"><svg width="10" height="10" viewBox="0 0 24 24" fill="#fbbf24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${p.rating}</span>` : ''}
+                    <span class="place-cat ${catClass[p.category] || 'cat-cafe'}">${p.category}</span>
+                  </div>
+                </div>
+              </a>`).join('')
+          : '<div class="empty">No places yet — add GOOGLE_PLACES_API_KEY to GitHub secrets.</div>'
       })
 
     // YouTube
