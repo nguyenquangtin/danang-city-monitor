@@ -26,3 +26,14 @@ jobs:
         run: python scripts/trends-poller.py
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Run Reddit poller
+        run: python scripts/reddit-poller.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Run YouTube poller
+        run: python scripts/youtube-poller.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}

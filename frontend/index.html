@@ -42,6 +42,11 @@
     .article a { color: #185fa5; font-size: 14px; text-decoration: none; }
     .article a:hover { text-decoration: underline; }
     .article .meta { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 4px; }
+    .yt-card { text-decoration: none; color: inherit; }
+    .yt-card img { width: 100%; border-radius: 6px; display: block; }
+    .yt-card .yt-title { font-size: 13px; margin-top: 6px; line-height: 1.4; color: #1a1a1a; }
+    .yt-card .yt-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -58,7 +63,12 @@
   </div>
 
   <div class="card">
-    <div class="label">Latest articles</div>
+    <div class="label">YouTube videos</div>
+    <div class="yt-grid" id="youtube">Loading...</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Latest articles &amp; Reddit</div>
     <div id="articles">Loading...</div>
   </div>
 
@@ -79,6 +89,19 @@
           rows.map(r =>
             `<span class="trend-pill">${r.keyword} <strong>${r.value}</strong></span>`
           ).join('')
+      })
+
+    fetch(API + '/youtube')
+      .then(r => r.json())
+      .then(rows => {
+        document.getElementById('youtube').innerHTML = rows.length
+          ? rows.map(r => `
+              <a class="yt-card" href="${r.url}" target="_blank">
+                <img src="${r.thumbnail_url}" alt="${r.title}" loading="lazy">
+                <div class="yt-title">${r.title}</div>
+                <div class="yt-meta">${Number(r.view_count).toLocaleString()} views</div>
+              </a>`).join('')
+          : 'No videos yet.'
       })
 
     fetch(API + '/articles')

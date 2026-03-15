@@ -35,6 +35,16 @@ app.get('/digest', async (_req, res) => {
   res.json(rows[0] ?? null)
 })
 
+app.get('/youtube', async (_req, res) => {
+  const { rows } = await pool.query(`
+    SELECT title, url, thumbnail_url, view_count, published_at
+    FROM youtube_videos
+    ORDER BY published_at DESC
+    LIMIT 20
+  `)
+  res.json(rows)
+})
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true })
 })
