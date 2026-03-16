@@ -399,11 +399,11 @@
 
         // Static beach markers
         const beaches = [
-          { name:'My Khe Beach',    lng:108.2483, lat:16.0447, desc:"Da Nang's most popular beach" },
-          { name:'Non Nuoc Beach',  lng:108.2592, lat:15.9803, desc:'Marble Mountains nearby' },
-          { name:'Bac My An Beach', lng:108.2481, lat:16.0334, desc:'Calm waters, resort area' },
-          { name:'Lang Co Beach',   lng:108.0978, lat:16.2203, desc:'Scenic lagoon beach' },
-          { name:'Nam O Beach',     lng:108.1302, lat:16.1025, desc:'Fishing village beach' },
+          { name:'My Khe Beach',    lng:108.2462, lat:16.0554, desc:"Da Nang's most popular beach" },
+          { name:'Non Nuoc Beach',  lng:108.2534, lat:15.9730, desc:'Marble Mountains nearby' },
+          { name:'Bac My An Beach', lng:108.2474, lat:16.0334, desc:'Calm waters, resort area' },
+          { name:'Lang Co Beach',   lng:108.0680, lat:16.2200, desc:'Scenic beach ~55km north' },
+          { name:'Nam O Beach',     lng:108.1302, lat:16.1025, desc:'Fishing village beach, Da Nang bay' },
         ]
         beaches.forEach(b => {
           const el = document.createElement('div')
@@ -439,9 +439,9 @@
               }).join('')
             : '<div class="empty">No articles yet.</div>'
 
-          // News pins on map
+          // News pins on map — small jitter keeps pins within the city
           rows.slice(0, 15).forEach(r => {
-            const jitter = () => (Math.random() - .5) * .04
+            const jitter = () => (Math.random() - .5) * .018
             const el = document.createElement('div')
             el.innerHTML = `<div style="width:10px;height:10px;background:#3b82f6;border-radius:50%;border:2px solid rgba(59,130,246,.4);box-shadow:0 0 6px #3b82f6;cursor:pointer"></div>`
             const marker = new mapboxgl.Marker(el)
@@ -485,7 +485,7 @@
 
           // YouTube pins on map (hidden by default)
           rows.slice(0, 8).forEach(r => {
-            const jitter = () => (Math.random() - .5) * .06
+            const jitter = () => (Math.random() - .5) * .022
             const el = document.createElement('div')
             el.innerHTML = markerHtml('#ef4444', '▶')
             const marker = new mapboxgl.Marker(el)
