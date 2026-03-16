@@ -10,21 +10,25 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #07080d; --surface: #0d0f18; --surface2: #131726;
-      --border: #1c2035; --border2: #252a40;
+      --bg: #07080d;
       --primary: #3b82f6; --green: #22c55e; --text: #e2e8f0;
       --muted: #64748b; --muted2: #94a3b8;
       --mono: 'Fira Code', monospace; --sans: 'Inter', sans-serif;
+      --glass-bg: rgba(7, 8, 13, 0.82);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-row: rgba(255, 255, 255, 0.03);
     }
     html, body { height: 100%; overflow: hidden; }
     body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; }
 
     /* ── Header ── */
     header {
+      position: relative; z-index: 1000;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 1.25rem; height: 44px;
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      z-index: 1000; position: relative;
+      background: rgba(7, 8, 13, 0.9);
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     }
     .logo { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .06em; }
     .logo span { color: var(--primary); }
@@ -38,126 +42,149 @@
     @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
     .clock { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 
-    /* ── App body ── */
-    .app { display: flex; height: calc(100vh - 44px); }
+    /* ── App: map fills full area ── */
+    .app { position: relative; height: calc(100vh - 44px); overflow: hidden; }
+    #map { position: absolute; inset: 0; }
 
-    /* ── Sidebar ── */
-    aside {
-      width: 340px; flex-shrink: 0;
-      border-right: 1px solid var(--border);
-      display: flex; flex-direction: column;
-      overflow: hidden;
+    /* ── Bento glass card base ── */
+    .bento-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px; overflow: hidden;
+      pointer-events: all;
     }
-
-    /* Tab nav */
-    .tabs { display: flex; border-bottom: 1px solid var(--border); }
-    .tab {
-      flex: 1; padding: 8px 4px; font-family: var(--mono); font-size: 10px;
-      font-weight: 600; letter-spacing: .06em; text-align: center;
-      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
-      transition: color 150ms, border-color 150ms;
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px;
+      cursor: pointer; user-select: none;
+      border-bottom: 1px solid var(--glass-border);
     }
-    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
-    .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 1rem; }
-    .tab-panel.active { display: block; }
-
-    /* Scrollbar */
-    .tab-panel::-webkit-scrollbar { width: 4px; }
-    .tab-panel::-webkit-scrollbar-track { background: var(--surface); }
-    .tab-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
-    .section-label {
-      display: flex; align-items: center; gap: 6px;
+    .bento-card.collapsed .card-header { border-bottom: none; }
+    .card-label {
       font-family: var(--mono); font-size: 10px; font-weight: 600;
-      color: var(--muted); letter-spacing: .1em; text-transform: uppercase;
-      margin-bottom: 10px;
+      color: var(--muted); letter-spacing: .08em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .collapse-btn {
+      font-family: var(--mono); font-size: 14px; line-height: 1;
+      color: var(--muted); background: none; border: none; cursor: pointer;
+      padding: 0; transition: color 120ms;
+    }
+    .collapse-btn:hover { color: var(--text); }
+    .card-body { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.08) transparent; }
+    .card-body::-webkit-scrollbar { width: 3px; }
+    .card-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+    .bento-card.collapsed .card-body { display: none; }
+
+    /* ── Left panel ── */
+    .panel-left {
+      position: absolute; top: 12px; left: 12px; width: 256px;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+      max-height: calc(100% - 24px);
     }
 
     /* Digest */
-    .digest-text { font-size: 13px; line-height: 1.7; color: var(--muted2); white-space: pre-wrap; }
+    #card-digest .card-body { padding: 10px 12px; max-height: 170px; }
+    .digest-text { font-size: 12px; line-height: 1.75; color: var(--muted2); white-space: pre-wrap; }
 
     /* Trends */
+    #card-trends .card-body { padding: 8px; max-height: 220px; }
     .trend-item {
       display: flex; align-items: center; justify-content: space-between;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 6px; padding: 6px 10px; margin-bottom: 6px;
+      background: var(--glass-row); border: 1px solid var(--glass-border);
+      border-radius: 5px; padding: 5px 8px; margin-bottom: 4px;
     }
-    .trend-kw { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .trend-val { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--primary); margin-left: 8px; flex-shrink: 0; }
+    .trend-item:last-child { margin-bottom: 0; }
+    .trend-kw { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 155px; }
+    .trend-val { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--primary); flex-shrink: 0; margin-left: 6px; }
 
-    /* Feed */
+    /* ── Right panel ── */
+    .panel-right {
+      position: absolute; top: 12px; right: 12px; width: 242px;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+      max-height: calc(100% - 24px);
+    }
+
+    /* Layer toggles */
+    #card-layers .card-body { padding: 8px; }
+    .layer-btn {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 6px 8px; margin-bottom: 4px;
+      background: var(--glass-row); border: 1px solid var(--glass-border);
+      border-radius: 5px; cursor: pointer; color: var(--muted2);
+      font-family: var(--sans); font-size: 12px;
+      transition: border-color 150ms, color 150ms; text-align: left;
+    }
+    .layer-btn:last-child { margin-bottom: 0; }
+    .layer-btn.active { border-color: rgba(59,130,246,.4); color: var(--text); }
+    .layer-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* YouTube */
+    #card-youtube .card-body { padding: 8px; max-height: 230px; }
+    .yt-list { display: flex; flex-direction: column; gap: 6px; }
+    .yt-row { display: flex; gap: 8px; text-decoration: none; color: inherit; cursor: pointer; }
+    .yt-row img { width: 78px; height: 46px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: rgba(255,255,255,.05); }
+    .yt-title { font-size: 11px; font-weight: 500; line-height: 1.4; color: var(--muted2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .yt-meta { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .yt-row:hover .yt-title { color: var(--primary); }
+
+    /* ── Bottom panel (feed) ── */
+    .panel-bottom {
+      position: absolute; bottom: 12px;
+      left: 280px; right: 266px;
+      pointer-events: none;
+    }
+    #card-feed .card-body { padding: 6px 10px; max-height: 152px; }
     .feed-item {
-      display: flex; gap: 8px; padding: 9px 0;
-      border-bottom: 1px solid var(--border); cursor: pointer;
+      display: flex; align-items: flex-start; gap: 7px;
+      padding: 7px 0; border-bottom: 1px solid var(--glass-border);
     }
     .feed-item:last-child { border-bottom: none; }
-    .feed-badge {
-      flex-shrink: 0; font-family: var(--mono); font-size: 9px; font-weight: 600;
-      padding: 2px 5px; border-radius: 3px; margin-top: 2px;
-    }
-    .badge-rss    { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
-    .badge-reddit { background: rgba(255,69,0,.12);   color: #fb923c; border: 1px solid rgba(255,69,0,.25); }
     .feed-title { font-size: 12px; font-weight: 500; color: var(--text); text-decoration: none; line-height: 1.4; display: block; }
     .feed-title:hover { color: var(--primary); }
     .feed-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-    /* YouTube mini */
-    .yt-list { display: flex; flex-direction: column; gap: 8px; }
-    .yt-row { display: flex; gap: 8px; text-decoration: none; color: inherit; }
-    .yt-row img { width: 90px; height: 54px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: var(--surface2); }
-    .yt-row-title { font-size: 12px; font-weight: 500; line-height: 1.4; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .yt-row-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
-    .yt-row:hover .yt-row-title { color: var(--primary); }
-
-    /* ── Map container ── */
-    .map-wrap { position: relative; flex: 1; display: flex; flex-direction: column; }
-    #map { flex: 1; height: 100%; min-height: 400px; background: #0a0c14; }
-
-    /* Mapbox overrides */
-    .mapboxgl-ctrl-group { background: var(--surface2) !important; border: 1px solid var(--border) !important; }
-    .mapboxgl-ctrl-group button { background: transparent; color: var(--text); }
-    .mapboxgl-ctrl-attrib { font-size: 9px; opacity: .5; }
-    .mapboxgl-popup-content { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 10px; max-width: 220px; font-family: var(--sans); font-size: 12px; }
-    .mapboxgl-popup-tip { border-top-color: var(--border) !important; }
-
-    /* ── Layer control panel ── */
-    .layer-panel {
-      position: absolute; top: 56px; right: 12px; z-index: 800;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px; min-width: 180px;
-    }
-    .layer-title {
-      font-family: var(--mono); font-size: 10px; font-weight: 600;
-      color: var(--muted); letter-spacing: .1em; text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .layer-btn {
-      display: flex; align-items: center; gap: 8px;
-      width: 100%; padding: 6px 8px; margin-bottom: 4px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 5px; cursor: pointer; color: var(--muted2);
-      font-family: var(--sans); font-size: 12px;
-      transition: border-color 150ms, color 150ms;
-      text-align: left;
-    }
-    .layer-btn.active { border-color: var(--primary); color: var(--text); }
-    .layer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-    /* skeleton */
+    /* Skeleton */
     .skeleton {
-      background: linear-gradient(90deg, var(--surface2) 25%, var(--border2) 50%, var(--surface2) 75%);
+      background: linear-gradient(90deg, rgba(255,255,255,.03) 25%, rgba(255,255,255,.06) 50%, rgba(255,255,255,.03) 75%);
       background-size: 200% 100%; animation: shimmer 1.5s infinite;
       border-radius: 4px; height: 12px; margin-bottom: 6px;
     }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .empty { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 6px 0; }
+    .empty { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 4px 0; }
 
+    /* Mapbox overrides */
+    .mapboxgl-ctrl-group {
+      background: var(--glass-bg) !important;
+      backdrop-filter: blur(12px) !important;
+      border: 1px solid var(--glass-border) !important;
+    }
+    .mapboxgl-ctrl-group button { background: transparent; color: var(--text); }
+    .mapboxgl-ctrl-attrib { font-size: 9px; opacity: .35; }
+    .mapboxgl-popup-content {
+      background: rgba(7,8,13,0.92); backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); color: var(--text);
+      border-radius: 8px; padding: 10px; max-width: 220px;
+      font-family: var(--sans); font-size: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    }
+    .mapboxgl-popup-tip { border-top-color: rgba(7,8,13,0.92) !important; }
+
+    /* Mobile */
     @media (max-width: 768px) {
-      .app { flex-direction: column; }
-      aside { width: 100%; height: 50vh; border-right: none; border-bottom: 1px solid var(--border); }
-      #map { height: 50vh; }
-      .map-wrap { height: 50vh; }
-      .layer-panel { top: auto; bottom: 12px; right: 12px; }
+      .panel-right { display: none; }
+      .panel-bottom { left: 280px; right: 12px; }
+    }
+    @media (max-width: 520px) {
+      .panel-left { width: 200px; }
+      .panel-bottom { left: 224px; right: 12px; }
+    }
+    @media (max-width: 420px) {
+      .panel-left { display: none; }
+      .panel-bottom { left: 12px; right: 12px; }
     }
   </style>
 </head>
@@ -171,72 +198,105 @@
   </header>
 
   <div class="app">
-    <!-- Sidebar -->
-    <aside>
-      <div class="tabs">
-        <div class="tab active" data-tab="digest">DIGEST</div>
-        <div class="tab" data-tab="trends">TRENDS</div>
-        <div class="tab" data-tab="feed">FEED</div>
-        <div class="tab" data-tab="youtube">VIDEO</div>
+    <!-- Map fills the full background -->
+    <div id="map"></div>
+
+    <!-- Left: Digest + Trends -->
+    <div class="panel-left">
+      <div class="bento-card" id="card-digest">
+        <div class="card-header" onclick="toggleCard('card-digest')">
+          <div class="card-label">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            AI Digest
+          </div>
+          <button class="collapse-btn">−</button>
+        </div>
+        <div class="card-body">
+          <div class="digest-text" id="digest">
+            <div class="skeleton" style="width:95%"></div>
+            <div class="skeleton" style="width:80%"></div>
+            <div class="skeleton" style="width:88%"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="tab-panel active" id="tab-digest">
-        <div class="section-label">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-          AI Summary — Today
+      <div class="bento-card" id="card-trends">
+        <div class="card-header" onclick="toggleCard('card-trends')">
+          <div class="card-label">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+            VN Trends
+          </div>
+          <button class="collapse-btn">−</button>
         </div>
-        <div class="digest-text" id="digest">
-          <div class="skeleton" style="width:95%"></div>
-          <div class="skeleton" style="width:80%"></div>
-          <div class="skeleton" style="width:90%"></div>
-          <div class="skeleton" style="width:70%"></div>
+        <div class="card-body">
+          <div id="trends">
+            <div class="skeleton" style="height:26px"></div>
+            <div class="skeleton" style="height:26px"></div>
+            <div class="skeleton" style="height:26px;width:80%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Layers + YouTube -->
+    <div class="panel-right">
+      <div class="bento-card" id="card-layers">
+        <div class="card-header" onclick="toggleCard('card-layers')">
+          <div class="card-label">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/></svg>
+            Map Layers
+          </div>
+          <button class="collapse-btn">−</button>
+        </div>
+        <div class="card-body">
+          <button class="layer-btn active" data-layer="hotspots">
+            <span class="layer-dot" style="background:#a855f7"></span> Hot Spots
+          </button>
+          <button class="layer-btn active" data-layer="beaches">
+            <span class="layer-dot" style="background:#06b6d4"></span> Beaches
+          </button>
+          <button class="layer-btn active" data-layer="news">
+            <span class="layer-dot" style="background:#3b82f6"></span> News Pins
+          </button>
+          <button class="layer-btn" data-layer="youtube">
+            <span class="layer-dot" style="background:#ef4444"></span> YouTube
+          </button>
         </div>
       </div>
 
-      <div class="tab-panel" id="tab-trends">
-        <div class="section-label">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
-          Vietnam Trending Now
+      <div class="bento-card" id="card-youtube">
+        <div class="card-header" onclick="toggleCard('card-youtube')">
+          <div class="card-label">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor"/></svg>
+            YouTube
+          </div>
+          <button class="collapse-btn">−</button>
         </div>
-        <div id="trends"><div class="skeleton" style="height:30px"></div><div class="skeleton" style="height:30px"></div></div>
-      </div>
-
-      <div class="tab-panel" id="tab-feed">
-        <div class="section-label">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1" fill="currentColor"/></svg>
-          News &amp; Reddit
+        <div class="card-body">
+          <div class="yt-list" id="youtube">
+            <div class="skeleton" style="height:46px"></div>
+            <div class="skeleton" style="height:46px"></div>
+          </div>
         </div>
-        <div id="feed"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div></div>
       </div>
+    </div>
 
-      <div class="tab-panel" id="tab-youtube">
-        <div class="section-label">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor"/></svg>
-          YouTube — Da Nang
+    <!-- Bottom: News Feed -->
+    <div class="panel-bottom">
+      <div class="bento-card" id="card-feed">
+        <div class="card-header" onclick="toggleCard('card-feed')">
+          <div class="card-label">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1" fill="currentColor"/></svg>
+            News &amp; Reddit
+          </div>
+          <button class="collapse-btn">−</button>
         </div>
-        <div class="yt-list" id="youtube"><div class="skeleton" style="height:54px"></div><div class="skeleton" style="height:54px"></div></div>
-      </div>
-    </aside>
-
-    <!-- Map -->
-    <div class="map-wrap">
-      <div id="map"></div>
-
-      <!-- Layer control -->
-      <div class="layer-panel">
-        <div class="layer-title">▼ Layers</div>
-        <button class="layer-btn active" data-layer="hotspots">
-          <span class="layer-dot" style="background:#a855f7"></span> Hot Spots
-        </button>
-        <button class="layer-btn active" data-layer="beaches">
-          <span class="layer-dot" style="background:#06b6d4"></span> Beaches
-        </button>
-        <button class="layer-btn active" data-layer="news">
-          <span class="layer-dot" style="background:#3b82f6"></span> News Pins
-        </button>
-        <button class="layer-btn" data-layer="youtube">
-          <span class="layer-dot" style="background:#ef4444"></span> YouTube
-        </button>
+        <div class="card-body">
+          <div id="feed">
+            <div class="skeleton"></div>
+            <div class="skeleton" style="width:80%"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -244,7 +304,7 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
   <script>
     const API = 'https://danang-city-monitor-production.up.railway.app'
-    const DA_NANG = [108.2022, 16.0544] // Mapbox uses [lng, lat]
+    const DA_NANG = [108.2022, 16.0544]
     let MAPBOX_TOKEN = ''
 
     // Clock
@@ -254,191 +314,189 @@
       }).format(new Date()) + ' UTC+7'
     }, 1000)
 
-    // Tabs
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab, .tab-panel').forEach(el => el.classList.remove('active'))
-        tab.classList.add('active')
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active')
-      })
-    })
+    // Collapse toggle
+    function toggleCard(id) {
+      const card = document.getElementById(id)
+      card.classList.toggle('collapsed')
+      card.querySelector('.collapse-btn').textContent = card.classList.contains('collapsed') ? '+' : '−'
+    }
 
-    // ── Bootstrap: fetch config then init map ──
+    // Bootstrap: fetch config then init map
     fetch(API + '/config').then(r => r.json()).then(cfg => {
       MAPBOX_TOKEN = cfg.mapboxToken
       initMap()
     })
 
     function initMap() {
-    mapboxgl.accessToken = MAPBOX_TOKEN
-    const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: DA_NANG,
-      zoom: 13,
-      pitch: 45,       // 3D tilt
-      bearing: -10,
-      antialias: true
-    })
-
-    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
-
-    // Toggle 2D/3D pitch on double-click
-    map.on('dblclick', () => {
-      map.easeTo({ pitch: map.getPitch() > 10 ? 0 : 45, duration: 600 })
-    })
-
-    // 3D buildings layer (added after map loads)
-    map.on('load', () => {
-      map.addLayer({
-        id: '3d-buildings',
-        source: 'composite',
-        'source-layer': 'building',
-        filter: ['==', 'extrude', 'true'],
-        type: 'fill-extrusion',
-        minzoom: 14,
-        paint: {
-          'fill-extrusion-color': '#1a2035',
-          'fill-extrusion-height': ['get', 'height'],
-          'fill-extrusion-base': ['get', 'min_height'],
-          'fill-extrusion-opacity': 0.7
-        }
+      mapboxgl.accessToken = MAPBOX_TOKEN
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: DA_NANG,
+        zoom: 13,
+        pitch: 45,
+        bearing: -10,
+        antialias: true
       })
 
-      loadAllData()
-    })
+      map.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
 
-    // Track markers per layer for toggle
-    const markerGroups = { hotspots: [], beaches: [], news: [], youtube: [] }
-    const layerVisible = { hotspots: true, beaches: true, news: true, youtube: false }
+      // Double-click toggles 2D/3D
+      map.on('dblclick', () => {
+        map.easeTo({ pitch: map.getPitch() > 10 ? 0 : 45, duration: 600 })
+      })
 
-    function addMarker(lngLat, html, groupKey) {
-      const el = document.createElement('div')
-      el.innerHTML = html
-      el.style.cursor = 'pointer'
-      const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '240px' })
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat(lngLat)
-        .setPopup(popup)
-      if (layerVisible[groupKey]) marker.addTo(map)
-      markerGroups[groupKey].push(marker)
-    }
+      // 3D buildings after map loads
+      map.on('load', () => {
+        map.addLayer({
+          id: '3d-buildings',
+          source: 'composite',
+          'source-layer': 'building',
+          filter: ['==', 'extrude', 'true'],
+          type: 'fill-extrusion',
+          minzoom: 14,
+          paint: {
+            'fill-extrusion-color': '#1a2035',
+            'fill-extrusion-height': ['get', 'height'],
+            'fill-extrusion-base': ['get', 'min_height'],
+            'fill-extrusion-opacity': 0.7
+          }
+        })
+        loadAllData()
+      })
 
-    function markerHtml(color, emoji) {
-      return `<div style="width:30px;height:30px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.5)">
-        <span style="transform:rotate(45deg);font-size:14px;line-height:1">${emoji}</span></div>`
-    }
+      // Marker groups for layer toggling
+      const markerGroups = { hotspots: [], beaches: [], news: [], youtube: [] }
+      const layerVisible  = { hotspots: true, beaches: true, news: true, youtube: false }
 
-    // Layer toggle
-    document.querySelectorAll('.layer-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.layer
-        btn.classList.toggle('active')
-        layerVisible[key] = btn.classList.contains('active')
-        markerGroups[key].forEach(m => {
-          layerVisible[key] ? m.addTo(map) : m.remove()
+      function markerHtml(color, emoji) {
+        return `<div style="width:28px;height:28px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.6);cursor:pointer">
+          <span style="transform:rotate(45deg);font-size:13px;line-height:1">${emoji}</span></div>`
+      }
+
+      // Layer toggle buttons (stop propagation so they don't collapse the card)
+      document.querySelectorAll('.layer-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation()
+          const key = btn.dataset.layer
+          btn.classList.toggle('active')
+          layerVisible[key] = btn.classList.contains('active')
+          markerGroups[key].forEach(m => layerVisible[key] ? m.addTo(map) : m.remove())
         })
       })
-    })
 
-    // Badge helper
-    function badge(source) {
-      const isReddit = source && source.toLowerCase().includes('reddit')
-      return isReddit
-        ? '<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(255,69,0,.15);color:#fb923c;border:1px solid rgba(255,69,0,.3);font-family:monospace;font-weight:700">REDDIT</span>'
-        : '<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);font-family:monospace;font-weight:700">RSS</span>'
-    }
+      // Badge helper for RSS vs Reddit
+      function badge(source) {
+        const isReddit = source && source.toLowerCase().includes('reddit')
+        return isReddit
+          ? '<span style="flex-shrink:0;font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(255,69,0,.15);color:#fb923c;border:1px solid rgba(255,69,0,.3);font-family:monospace;font-weight:700;margin-top:2px">REDDIT</span>'
+          : '<span style="flex-shrink:0;font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);font-family:monospace;font-weight:700;margin-top:2px">RSS</span>'
+      }
 
-    function loadAllData() {
-      const catEmoji = { 'Cafe':'☕','Restaurant':'🍜','Photo Spot':'📸','Bar':'🍸','Hotel':'🏨' }
-      const catColor = { 'Cafe':'#a855f7','Restaurant':'#f97316','Photo Spot':'#22c55e','Bar':'#ef4444','Hotel':'#3b82f6' }
+      function loadAllData() {
+        const catEmoji = { 'Cafe':'☕','Restaurant':'🍜','Photo Spot':'📸','Bar':'🍸','Hotel':'🏨' }
+        const catColor = { 'Cafe':'#a855f7','Restaurant':'#f97316','Photo Spot':'#22c55e','Bar':'#ef4444','Hotel':'#3b82f6' }
 
-      // Static beaches
-      const beaches = [
-        { name:'My Khe Beach',    lng:108.2483, lat:16.0447, desc:"Da Nang's most popular beach" },
-        { name:'Non Nuoc Beach',  lng:108.2592, lat:15.9803, desc:'Marble Mountains nearby' },
-        { name:'Bac My An Beach', lng:108.2481, lat:16.0334, desc:'Calm waters, resort area' },
-        { name:'Lang Co Beach',   lng:108.0978, lat:16.2203, desc:'Scenic lagoon beach' },
-        { name:'Nam O Beach',     lng:108.1302, lat:16.1025, desc:'Fishing village beach' },
-      ]
-      beaches.forEach(b => {
-        const el = document.createElement('div')
-        el.innerHTML = markerHtml('#06b6d4','🏖️')
-        new mapboxgl.Marker(el).setLngLat([b.lng, b.lat])
-          .setPopup(new mapboxgl.Popup({ offset:20, maxWidth:'200px' })
-            .setHTML(`<b style="color:#06b6d4">${b.name}</b><br><span style="color:#94a3b8;font-size:11px">${b.desc}</span>`))
-          .addTo(map)
-        markerGroups.beaches.push({ remove: () => {}, addTo: () => {} }) // beaches always visible initially
-      })
-
-      // Digest
-      fetch(API + '/digest').then(r => r.json()).then(d => {
-        document.getElementById('digest').textContent = d?.summary || 'No digest yet — check back after midnight UTC.'
-      })
-
-      // Trends
-      fetch(API + '/trends').then(r => r.json()).then(rows => {
-        document.getElementById('trends').innerHTML = rows.length
-          ? rows.map(r => `<div class="trend-item"><span class="trend-kw">${r.keyword}</span><span class="trend-val">${Number(r.value).toLocaleString()}</span></div>`).join('')
-          : '<div class="empty">No trends yet.</div>'
-      })
-
-      // Articles
-      fetch(API + '/articles').then(r => r.json()).then(rows => {
-        document.getElementById('feed').innerHTML = rows.length
-          ? rows.map(r => {
-              const t = new Date(r.published_at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})
-              return `<div class="feed-item">${badge(r.source)}<div><a class="feed-title" href="${r.url}" target="_blank">${r.title}</a><div class="feed-meta">${r.source} · ${t}</div></div></div>`
-            }).join('')
-          : '<div class="empty">No articles yet.</div>'
-
-        rows.slice(0, 15).forEach(r => {
-          const jitter = () => (Math.random() - .5) * .04
+        // Static beach markers
+        const beaches = [
+          { name:'My Khe Beach',    lng:108.2483, lat:16.0447, desc:"Da Nang's most popular beach" },
+          { name:'Non Nuoc Beach',  lng:108.2592, lat:15.9803, desc:'Marble Mountains nearby' },
+          { name:'Bac My An Beach', lng:108.2481, lat:16.0334, desc:'Calm waters, resort area' },
+          { name:'Lang Co Beach',   lng:108.0978, lat:16.2203, desc:'Scenic lagoon beach' },
+          { name:'Nam O Beach',     lng:108.1302, lat:16.1025, desc:'Fishing village beach' },
+        ]
+        beaches.forEach(b => {
           const el = document.createElement('div')
-          el.innerHTML = `<div style="width:10px;height:10px;background:#3b82f6;border-radius:50%;border:2px solid rgba(59,130,246,.4);box-shadow:0 0 6px #3b82f6;cursor:pointer"></div>`
-          new mapboxgl.Marker(el).setLngLat([DA_NANG[0]+jitter(), DA_NANG[1]+jitter()])
-            .setPopup(new mapboxgl.Popup({offset:10,maxWidth:'220px'})
-              .setHTML(`<a href="${r.url}" target="_blank" style="color:#60a5fa;font-size:12px">${r.title}</a><br><span style="color:#64748b;font-size:10px">${r.source}</span>`))
+          el.innerHTML = markerHtml('#06b6d4', '🏖️')
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat([b.lng, b.lat])
+            .setPopup(new mapboxgl.Popup({ offset: 20, maxWidth: '200px' })
+              .setHTML(`<b style="color:#06b6d4">${b.name}</b><br><span style="color:#94a3b8;font-size:11px">${b.desc}</span>`))
             .addTo(map)
-          markerGroups.news.push({ remove(){el.parentNode&&el.parentNode.removeChild(el)}, addTo(){} })
+          markerGroups.beaches.push(marker)
         })
-      })
 
-      // Places
-      fetch(API + '/places').then(r => r.json()).then(rows => {
-        rows.forEach(p => {
-          if (!p.lat || !p.lng) return
-          const emoji = catEmoji[p.category] || '📍'
-          const color = catColor[p.category] || '#a855f7'
-          const el = document.createElement('div')
-          el.innerHTML = markerHtml(color, emoji)
-          const popup = new mapboxgl.Popup({offset:20,maxWidth:'240px'}).setHTML(`
-            ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;border-radius:4px;margin-bottom:6px;display:block">` : ''}
-            <b style="font-size:13px">${p.name}</b><br>
-            <span style="color:#fbbf24">★ ${p.rating||'–'}</span>
-            <span style="color:#64748b;font-size:11px"> · ${p.category}</span><br>
-            <span style="color:#94a3b8;font-size:11px">${p.address||''}</span><br>
-            <a href="${p.maps_url}" target="_blank" style="color:#3b82f6;font-size:11px;margin-top:4px;display:block">Open in Google Maps →</a>`)
-          const marker = new mapboxgl.Marker(el).setLngLat([p.lng, p.lat]).setPopup(popup).addTo(map)
-          markerGroups.hotspots.push(marker)
+        // AI Digest
+        fetch(API + '/digest').then(r => r.json()).then(d => {
+          document.getElementById('digest').textContent = d?.summary || 'No digest yet — check back after midnight UTC.'
         })
-      })
 
-      // YouTube
-      fetch(API + '/youtube').then(r => r.json()).then(rows => {
-        document.getElementById('youtube').innerHTML = rows.length
-          ? rows.map(r => `<a class="yt-row" href="${r.url}" target="_blank"><img src="${r.thumbnail_url}" alt="${r.title}" loading="lazy"><div><div class="yt-row-title">${r.title}</div><div class="yt-row-meta">${Number(r.view_count).toLocaleString()} views</div></div></a>`).join('')
-          : '<div class="empty">No videos yet.</div>'
-        rows.slice(0,8).forEach(r => {
-          const jitter = () => (Math.random()-.5)*.06
-          const el = document.createElement('div')
-          el.innerHTML = markerHtml('#ef4444','▶')
-          const marker = new mapboxgl.Marker(el).setLngLat([DA_NANG[0]+jitter(),DA_NANG[1]+jitter()])
-            .setPopup(new mapboxgl.Popup({offset:20,maxWidth:'220px'}).setHTML(`<a href="${r.url}" target="_blank" style="color:#f87171;font-size:12px">${r.title}</a><br><span style="color:#64748b;font-size:10px">${Number(r.view_count).toLocaleString()} views</span>`))
-          markerGroups.youtube.push(marker)
+        // Trending searches
+        fetch(API + '/trends').then(r => r.json()).then(rows => {
+          document.getElementById('trends').innerHTML = rows.length
+            ? rows.map(r => `<div class="trend-item"><span class="trend-kw">${r.keyword}</span><span class="trend-val">${Number(r.value).toLocaleString()}</span></div>`).join('')
+            : '<div class="empty">No trends yet.</div>'
         })
-      })
-    } // end loadAllData
+
+        // News & Reddit articles
+        fetch(API + '/articles').then(r => r.json()).then(rows => {
+          document.getElementById('feed').innerHTML = rows.length
+            ? rows.map(r => {
+                const t = new Date(r.published_at).toLocaleString('vi-VN', {
+                  timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit'
+                })
+                return `<div class="feed-item">${badge(r.source)}<div><a class="feed-title" href="${r.url}" target="_blank">${r.title}</a><div class="feed-meta">${r.source} · ${t}</div></div></div>`
+              }).join('')
+            : '<div class="empty">No articles yet.</div>'
+
+          // News pins on map
+          rows.slice(0, 15).forEach(r => {
+            const jitter = () => (Math.random() - .5) * .04
+            const el = document.createElement('div')
+            el.innerHTML = `<div style="width:10px;height:10px;background:#3b82f6;border-radius:50%;border:2px solid rgba(59,130,246,.4);box-shadow:0 0 6px #3b82f6;cursor:pointer"></div>`
+            const marker = new mapboxgl.Marker(el)
+              .setLngLat([DA_NANG[0] + jitter(), DA_NANG[1] + jitter()])
+              .setPopup(new mapboxgl.Popup({ offset: 10, maxWidth: '220px' })
+                .setHTML(`<a href="${r.url}" target="_blank" style="color:#60a5fa;font-size:12px">${r.title}</a><br><span style="color:#64748b;font-size:10px">${r.source}</span>`))
+              .addTo(map)
+            markerGroups.news.push(marker)
+          })
+        })
+
+        // Google Places hot spots
+        fetch(API + '/places').then(r => r.json()).then(rows => {
+          rows.forEach(p => {
+            if (!p.lat || !p.lng) return
+            const emoji = catEmoji[p.category] || '📍'
+            const color = catColor[p.category] || '#a855f7'
+            const el = document.createElement('div')
+            el.innerHTML = markerHtml(color, emoji)
+            const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '240px' }).setHTML(`
+              ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;border-radius:4px;margin-bottom:6px;display:block">` : ''}
+              <b style="font-size:13px">${p.name}</b><br>
+              <span style="color:#fbbf24">★ ${p.rating || '–'}</span>
+              <span style="color:#64748b;font-size:11px"> · ${p.category}</span><br>
+              <span style="color:#94a3b8;font-size:11px">${p.address || ''}</span><br>
+              <a href="${p.maps_url}" target="_blank" style="color:#3b82f6;font-size:11px;margin-top:4px;display:block">Open in Google Maps →</a>`)
+            const marker = new mapboxgl.Marker(el).setLngLat([p.lng, p.lat]).setPopup(popup).addTo(map)
+            markerGroups.hotspots.push(marker)
+          })
+        })
+
+        // YouTube videos
+        fetch(API + '/youtube').then(r => r.json()).then(rows => {
+          document.getElementById('youtube').innerHTML = rows.length
+            ? rows.map(r => `
+                <a class="yt-row" href="${r.url}" target="_blank">
+                  <img src="${r.thumbnail_url}" alt="${r.title}" loading="lazy">
+                  <div><div class="yt-title">${r.title}</div><div class="yt-meta">${Number(r.view_count).toLocaleString()} views</div></div>
+                </a>`).join('')
+            : '<div class="empty">No videos yet.</div>'
+
+          // YouTube pins on map (hidden by default)
+          rows.slice(0, 8).forEach(r => {
+            const jitter = () => (Math.random() - .5) * .06
+            const el = document.createElement('div')
+            el.innerHTML = markerHtml('#ef4444', '▶')
+            const marker = new mapboxgl.Marker(el)
+              .setLngLat([DA_NANG[0] + jitter(), DA_NANG[1] + jitter()])
+              .setPopup(new mapboxgl.Popup({ offset: 20, maxWidth: '220px' })
+                .setHTML(`<a href="${r.url}" target="_blank" style="color:#f87171;font-size:12px">${r.title}</a><br><span style="color:#64748b;font-size:10px">${Number(r.view_count).toLocaleString()} views</span>`))
+            markerGroups.youtube.push(marker)
+            // YouTube layer is off by default — don't add to map
+          })
+        })
+      } // end loadAllData
     } // end initMap
   </script>
 </body>
